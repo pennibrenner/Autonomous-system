@@ -1,0 +1,113 @@
+"""Sample Webots controller for the pick and place benchmark."""
+
+# Max velocities:
+#   Wheels:  14.81
+#   Arms:    1.5708
+#   Fingers: 10
+# Max angles:
+#   Arm 2:   -1.13446
+#   Arm 3:   -2.63545
+#   Arm 4:   -1.78024
+
+from controller import Robot
+import math
+
+# Create the Robot instance.
+robot = Robot()
+
+# Get the time step of the current world.
+timestep = int(robot.getBasicTimeStep())
+
+# Inizialize base motors.
+wheels = []
+wheels.append(robot.getMotor("wheel1"))
+wheels.append(robot.getMotor("wheel2"))
+wheels.append(robot.getMotor("wheel3"))
+wheels.append(robot.getMotor("wheel4"))
+for wheel in wheels:
+    # Activate controlling the motors setting the velocity.
+    # Otherwise by default the motor expects to be controlled in force or position,
+    # and setVelocity will set the maximum motor velocity instead of the target velocity.
+    wheel.setPosition(float('+inf'))
+
+# Initialize arm motors.
+armMotors = []
+armMotors.append(robot.getMotor("arm1"))
+armMotors.append(robot.getMotor("arm2"))
+armMotors.append(robot.getMotor("arm3"))
+armMotors.append(robot.getMotor("arm4"))
+armMotors.append(robot.getMotor("arm5"))
+# Set the maximum motor velocity.
+for arm in armMotors:
+    arm.setVelocity(1.5708)
+
+
+# Initialize arm position sensors.
+# These sensors can be used to get the current joint position and monitor the joint movements.
+armPositionSensors = []
+armPositionSensors.append(robot.getPositionSensor("arm1sensor"))
+armPositionSensors.append(robot.getPositionSensor("arm2sensor"))
+armPositionSensors.append(robot.getPositionSensor("arm3sensor"))
+armPositionSensors.append(robot.getPositionSensor("arm4sensor"))
+armPositionSensors.append(robot.getPositionSensor("arm5sensor"))
+for sensor in armPositionSensors:
+    sensor.enable(timestep)
+
+# Initialize gripper motors.
+finger1 = robot.getMotor("finger1")
+finger2 = robot.getMotor("finger2")
+# Set the maximum motor velocity.
+finger1.setVelocity(10)
+finger2.setVelocity(10)
+# Read the miminum and maximum position of the gripper motors.
+fingerMinPosition = finger1.getMinPosition()
+fingerMaxPosition = finger1.getMaxPosition()
+
+# Move forward, move arms and ope gripper.
+for wheel in wheels:
+    wheel.setVelocity(14.81)
+armMotors[1].setPosition(-0.25*math.pi)
+armMotors[2].setPosition(-0.25*math.pi)
+finger1.setPosition(fingerMaxPosition)
+finger2.setPosition(fingerMaxPosition)
+
+# Stop moving forward.
+robot.step(240 * timestep)
+for wheel in wheels:
+    wheel.setVelocity(0.0)
+
+# Move arm just over conveyor belt edge, close gripper.
+armMotors[3].setPosition(-0.25*math.pi)
+robot.step(30 * timestep)
+finger1.setPosition(fingerMinPosition)
+finger2.setPosition(fingerMinPosition)
+robot.step(10 * timestep)
+
+#Rotate arms and start moving towards target.
+armMotors[0].setPosition(0.825*math.pi)
+armMotors[1].setPosition(-0.125*math.pi)
+armMotors[2].setPosition(0)
+armMotors[3].setPosition(0)
+
+for wheel in wheels:
+    wheel.setVelocity(-14.81)
+
+# Adjust left wheel speed so as to turn slightly.
+wheels[1].setVelocity(-11.81)
+wheels[3].setVelocity(-11.81)
+
+# Stop turning.
+robot.step(50 * timestep)
+wheels[1].setVelocity(-14.81)
+wheels[3].setVelocity(-14.81)
+
+# YEET the cube.
+robot.step(150 * timestep)
+armMotors[1].setPosition(-1.13446)
+robot.step(10 * timestep)
+finger1.setPosition(fingerMaxPosition)
+finger2.setPosition(fingerMaxPosition)
+
+# Stop moving.
+for wheel in wheels:
+    wheel.setVelocity(0.0)
